@@ -17,6 +17,9 @@ serde_repr = "0.1.11"
 [lib]
 bench = false
 
+[dependencies]
+smallstr = "~0.3.0"
+
 [[bench]]
 name = "log"
 harness = false
