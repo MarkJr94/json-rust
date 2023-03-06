@@ -1,6 +1,5 @@
-// #![feature(custom_derive)]
+// #![feature(custom_derive)];
 // #![feature(custom_attribute)]
-#![feature(test)]
 // #![feature(plugin)]
 // #![plugin(serde_macros)]
 
@@ -8,16 +7,14 @@
 // #![recursion_limit="259"]
 
 extern crate json;
-extern crate test;
 // extern crate serde;
 // extern crate serde_json;
 // extern crate rustc_serialize;
 // extern crate num_traits;
 
-#[macro_use]
 // mod macros;
 
-use test::Bencher;
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
 // #[derive(Debug, PartialEq, RustcEncodable, RustcDecodable, Serialize, Deserialize)]
 // struct Http {
@@ -228,68 +225,70 @@ const JSON_FLOAT_STR: &'static str = r#"[[-65.613616999999977,43.420273000000009
 //     });
 // }
 
-#[bench]
-fn json_rust_parse(b: &mut Bencher) {
-    b.bytes = JSON_STR.len() as u64;
+fn json_rust_parse(c: &mut Criterion) {
+    // b.bytes = JSON_STR.len() as u64;
 
-    b.iter(|| {
-        json::parse(JSON_STR).unwrap();
+    // b.iter(|| {
+    //     json::parse(JSON_STR).unwrap();
+    // });
+
+    let mut group = c.benchmark_group("parse");
+
+    group.throughput(Throughput::Bytes(JSON_STR.len() as u64));
+    group.bench_with_input("parse", JSON_STR, |b, input_str| {
+        b.iter(|| {
+            json::parse(input_str).unwrap();
+        })
+    });
+
+    group.throughput(Throughput::Bytes(JSON_FLOAT_STR.len() as u64));
+    group.bench_with_input("parse_floats", JSON_FLOAT_STR, |b, input_str| {
+        b.iter(|| {
+            json::parse(input_str).unwrap();
+        })
     });
 }
 
-#[bench]
-fn json_rust_parse_floats(b: &mut Bencher) {
-    b.bytes = JSON_FLOAT_STR.len() as u64;
+fn json_rust_stringify(c: &mut Criterion) {
+    let data = json::parse(JSON_STR).unwrap();
+    let data_dump_len = data.dump().len() as u64;
 
-    b.iter(|| {
-        json::parse(JSON_FLOAT_STR).unwrap();
+    let float_data = json::parse(JSON_FLOAT_STR).unwrap();
+    let float_data_dump_len = float_data.dump().len() as u64;
+
+    let mut group = c.benchmark_group("stringify");
+
+    group.throughput(Throughput::Bytes(data_dump_len));
+    group.bench_with_input("stringify", &data, |b, data| {
+        b.iter(|| {
+            data.dump();
+        })
+    });
+
+    group.throughput(Throughput::Bytes(data_dump_len));
+    group.bench_with_input("stringify_io_write", &data, |b, data| {
+        let mut target = Vec::new();
+        b.iter(|| {
+            data.write(&mut target).unwrap();
+        })
+    });
+
+    group.throughput(Throughput::Bytes(float_data_dump_len));
+    group.bench_with_input("stringify_floats", &float_data, |b, float_data| {
+        b.iter(|| {
+            float_data.dump();
+        })
+    });
+
+    group.throughput(Throughput::Bytes(float_data_dump_len));
+    group.bench_with_input("stringify_floats_io_write", &float_data, |b, float_data| {
+        let mut target = Vec::new();
+        b.iter(|| {
+            float_data.write(&mut target).unwrap();
+        })
     });
 }
 
-#[bench]
-fn json_rust_stringify(b: &mut Bencher) {
-    let data = json::parse(JSON_STR).unwrap();
+criterion_group!(json_rust, json_rust_parse, json_rust_stringify);
 
-    b.bytes = data.dump().len() as u64;
-
-    b.iter(|| {
-        data.dump();
-    })
-}
-
-#[bench]
-fn json_rust_stringify_io_write(b: &mut Bencher) {
-    let data = json::parse(JSON_STR).unwrap();
-
-    b.bytes = data.dump().len() as u64;
-
-    let mut target = Vec::new();
-
-    b.iter(|| {
-        data.to_writer(&mut target);
-    })
-}
-
-#[bench]
-fn json_rust_stringify_floats(b: &mut Bencher) {
-    let data = json::parse(JSON_FLOAT_STR).unwrap();
-
-    b.bytes = data.dump().len() as u64;
-
-    b.iter(|| {
-        data.dump();
-    })
-}
-
-#[bench]
-fn json_rust_stringify_floats_io_write(b: &mut Bencher) {
-    let data = json::parse(JSON_FLOAT_STR).unwrap();
-
-    b.bytes = data.dump().len() as u64;
-
-    let mut target = Vec::new();
-
-    b.iter(|| {
-        data.to_writer(&mut target);
-    })
-}
+criterion_main!(json_rust);
