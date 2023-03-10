@@ -2,12 +2,9 @@ use std::iter::FromIterator;
 use std::ops::{Deref, Index, IndexMut};
 use std::{fmt, mem, ptr, slice, str};
 
-use smallstr::SmallString;
-
 use crate::codegen::{DumpGenerator, Generator, PrettyGenerator};
 use crate::value::JsonValue;
 
-const KEY_BUF_LEN: usize = 32;
 static NULL: JsonValue = JsonValue::Null;
 
 // FNV-1a implementation
@@ -51,9 +48,11 @@ fn hash_key(key: &[u8]) -> u64 {
     hash
 }
 
+type SmartString = smartstring::SmartString<smartstring::LazyCompact>;
+
 #[derive(Clone)]
 struct Key {
-    pub key_str: SmallString<[u8; KEY_BUF_LEN]>,
+    pub key_str: SmartString,
 
     // A hash of the key, explanation below.
     pub hash: u64,
@@ -63,8 +62,8 @@ impl Key {
     #[inline]
     fn new(hash: u64, key_str: &str) -> Self {
         Key {
-            key_str: SmallString::from(key_str),
-            hash: hash,
+            key_str: SmartString::from(key_str),
+            hash,
         }
     }
 
@@ -117,7 +116,7 @@ impl Node {
     fn new(value: JsonValue, hash: u64, key: &str) -> Node {
         Node {
             key: Key::new(hash, key),
-            value: value,
+            value,
             left: 0,
             right: 0,
         }

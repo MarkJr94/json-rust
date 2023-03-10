@@ -18,7 +18,7 @@ serde_repr = "0.1.11"
 bench = false
 
 [dependencies]
-smallstr = "~0.3.0"
+smartstring = "1"
 
 [[bench]]
 name = "log"
