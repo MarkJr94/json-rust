@@ -8,9 +8,19 @@ documentation = "https://docs.rs/json/"
 license = "MIT/Apache-2.0"
 edition = "2018"
 
+[dev-dependencies]
+criterion = "0.4"
+serde = "1.0.155"
+serde_json = "1.0.94"
+serde_repr = "0.1.11"
+
+[lib]
+bench = false
+
 [[bench]]
 name = "log"
 harness = false
 
-[dev-dependencies]
-criterion = "0.4"
+[[bench]]
+name = "serde"
+harness = false
